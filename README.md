@@ -35,7 +35,7 @@ type Format struct {
 ### youtube.Download(format_index, output_file, callback)
 `format_index` is the index of the format listed in the `Video.Formats` array. Youtube offers a number of video formats (mp4, webm, 3gp etc.)
 
-Callback function signature
+**Callback function signature:**
 
 ```go
 type HttpProgressCallback func(transferred int, total int)
