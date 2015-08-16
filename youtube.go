@@ -47,12 +47,13 @@ func Get(video_id string) (Video, error) {
 }
 
 // Download video
-type HttpProgressCallback func(readed int, transferred int)
+type HttpProgressCallback func(transferred int, total int)
 
 type HttpProgress struct {
 	io.ReadCloser
 	io.Reader
-	transferred int //Total # of bytes transferred
+	total       int
+	transferred int
 	callback    HttpProgressCallback
 }
 
@@ -61,7 +62,7 @@ func (bf *HttpProgress) Read(p []byte) (int, error) {
 	bf.transferred += readed
 
 	if err == nil {
-		bf.callback(readed, bf.transferred)
+		bf.callback(bf.transferred, bf.total)
 	}
 
 	return readed, err
@@ -80,7 +81,14 @@ func (video *Video) Download(index int, filename string, callback HttpProgressCa
 	resp, err := http.Get(video.Formats[index].Url)
 	defer resp.Body.Close()
 
-	resp.Body = &HttpProgress{Reader: resp.Body, callback: callback}
+	if resp.StatusCode != http.StatusOK {
+		return errors.New("Unable to download video, status: " + resp.Status)
+	}
+
+	// Total size
+	size, _ := strconv.Atoi(resp.Header.Get("Content-Length"))
+
+	resp.Body = &HttpProgress{Reader: resp.Body, total: size, callback: callback}
 
 	if err != nil {
 		return errors.New("Unable to download video content from YouTube")
